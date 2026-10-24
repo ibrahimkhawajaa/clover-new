@@ -1,0 +1,149 @@
+import Link from "next/link";
+import { Plus, Ticket } from "lucide-react";
+import { StatusBadge } from "@/components/status-badge";
+import { requirePageUser } from "@/lib/auth/guards";
+import { listTicketsForUser } from "@/lib/services/tickets";
+import { cn } from "@/lib/utils";
+
+function firstName(name: string) {
+  return name.trim().split(/\s+/)[0] || name;
+}
+
+function priorityTagClass(priority: string) {
+  if (priority === "urgent") return "bg-coral text-on-coral";
+  if (priority === "high") return "bg-tertiary-fixed text-on-tertiary-fixed";
+  if (priority === "medium") return "bg-secondary-container text-on-secondary-container";
+  return "bg-surface-container text-on-surface-variant";
+}
+
+export default async function ClientDashboardPage() {
+  const user = await requirePageUser(["client"]);
+  const { items } = await listTicketsForUser(user, { pageSize: 50 });
+
+  const active = items.filter((t) => !["resolved", "closed"].includes(t.status));
+  const openCount = items.filter((t) =>
+    ["open", "assigned", "in_progress", "waiting_for_client"].includes(t.status)
+  ).length;
+  const resolved = items.filter((t) => t.status === "resolved" || t.status === "closed").length;
+
+  return (
+    <div className="space-y-8">
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight text-primary">
+          Hello, {firstName(user.name)}
+        </h1>
+        <p className="mt-1 text-sm text-on-surface-variant">
+          Track your support requests with Clover Community Healthcare.
+        </p>
+      </div>
+
+      <section className="grid gap-4 sm:grid-cols-3">
+        <div className="rounded-2xl bg-primary-container p-6 text-on-primary-container shadow-card sm:col-span-2">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-sm font-medium text-on-primary-container/80">Active tickets</p>
+              <p className="mt-2 text-5xl font-bold tabular-nums text-secondary-container">
+                {active.length}
+              </p>
+              <p className="mt-2 text-sm text-on-primary-container/70">
+                Requests still awaiting resolution
+              </p>
+            </div>
+            <span className="rounded-xl bg-white/10 p-3">
+              <Ticket className="h-6 w-6 text-secondary-container" />
+            </span>
+          </div>
+        </div>
+
+        <div className="grid gap-4">
+          <div className="rounded-2xl bg-secondary-container p-5 shadow-soft">
+            <p className="text-xs font-semibold uppercase tracking-wide text-on-secondary-container/80">
+              Open
+            </p>
+            <p className="mt-2 text-3xl font-bold tabular-nums text-primary">{openCount}</p>
+          </div>
+          <div className="rounded-2xl bg-surface-container-lowest p-5 shadow-soft">
+            <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant">
+              Resolved
+            </p>
+            <p className="mt-2 text-3xl font-bold tabular-nums text-primary">{resolved}</p>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-on-surface-variant">
+          Quick action
+        </h2>
+        <Link
+          href="/client/tickets/new"
+          className="flex items-center gap-3 rounded-2xl bg-tertiary-fixed p-5 text-on-tertiary-fixed shadow-soft transition hover:shadow-card"
+        >
+          <span className="rounded-xl bg-coral p-3 text-on-coral">
+            <Plus className="h-5 w-5" />
+          </span>
+          <div>
+            <p className="font-semibold">New ticket</p>
+            <p className="text-xs opacity-80">Start a secure support request</p>
+          </div>
+        </Link>
+      </section>
+
+      <section>
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-on-surface-variant">
+            Recent tickets
+          </h2>
+          <Link
+            href="/client/tickets"
+            className="text-xs font-semibold text-primary underline-offset-4 hover:underline"
+          >
+            View all →
+          </Link>
+        </div>
+        {items.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-outline-variant/70 bg-surface-container-lowest px-6 py-12 text-center shadow-soft">
+            <p className="text-sm text-on-surface-variant">
+              Need help? Create a ticket and our team will respond securely.
+            </p>
+            <Link
+              href="/client/tickets/new"
+              className="mt-4 inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition hover:bg-primary/90"
+            >
+              <Plus className="h-4 w-4" /> Create your first ticket
+            </Link>
+          </div>
+        ) : (
+          <ul className="space-y-3">
+            {items.slice(0, 5).map((t) => (
+              <li key={t.id}>
+                <Link
+                  href={`/client/tickets/${t.id}`}
+                  className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-surface-container-lowest p-4 shadow-soft transition hover:shadow-card"
+                >
+                  <div className="min-w-0">
+                    <p className="font-semibold text-on-surface">{t.title}</p>
+                    <p className="mt-0.5 text-xs text-on-surface-variant">
+                      {t.ticketNumber} · {t.createdAt}
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span
+                      className={cn(
+                        "rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide",
+                        priorityTagClass(t.priority)
+                      )}
+                    >
+                      {t.priority}
+                    </span>
+                    <StatusBadge value={t.status} />
+                  </div>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+    </div>
+  );
+}
