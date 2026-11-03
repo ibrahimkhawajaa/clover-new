@@ -53,6 +53,7 @@ describe("Clover portal core workflows", () => {
       "password_reset_tokens",
       "user_sessions",
       "audit_logs",
+      "chat_feedback",
       "chat_sessions",
       "chat_messages",
       "ticket_assignments",
@@ -63,12 +64,9 @@ describe("Clover portal core workflows", () => {
       "portal_settings",
       "users",
     ];
+    await client.execute("PRAGMA foreign_keys = OFF");
     for (const t of tables) {
-      try {
-        await client.execute(`DROP TABLE IF EXISTS \`${t}\``);
-      } catch {
-        /* ignore */
-      }
+      await client.execute(`DROP TABLE IF EXISTS \`${t}\``);
     }
     client.close();
 
