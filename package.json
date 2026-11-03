@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "vercel-build": "node -r dotenv/config -e \"if (!process.env.TURSO_DATABASE_URL || process.env.TURSO_DATABASE_URL.startsWith('file:') || !process.env.TURSO_AUTH_TOKEN) throw new Error('Set TURSO_DATABASE_URL and TURSO_AUTH_TOKEN in Vercel before deploying')\" && drizzle-kit push && next build",
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
@@ -13,7 +14,7 @@
     "db:push": "drizzle-kit push",
     "db:seed": "tsx scripts/seed.ts",
     "db:setup": "drizzle-kit push && tsx scripts/seed.ts",
-    "db:setup-turso": "tsx scripts/setup-turso.ts",
+    "db:setup-turso": "drizzle-kit push && tsx scripts/seed.ts",
     "db:ensure-admin": "tsx scripts/ensure-admin.ts",
     "test": "vitest run",
     "test:watch": "vitest"
